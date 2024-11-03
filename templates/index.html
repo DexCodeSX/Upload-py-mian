@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern File Uploader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            padding: 2rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        .upload-area.dragover {
+            background-color: #f0f8ff;
+            border-color: #007bff;
+        }
+        .upload-area p {
+            margin: 0;
+            color: #666;
+        }
+        #file-input {
+            display: none;
+        }
+        .btn {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        #progress-bar {
+            width: 0;
+            height: 4px;
+            background-color: #007bff;
+            margin-top: 1rem;
+            transition: width 0.3s ease;
+        }
+        #status {
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+        @media (max-width: 480px) {
+            .container {
+                width: 95%;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Modern File Uploader</h1>
+        <div id="upload-area" class="upload-area">
+            <p>Drag & Drop files here or click to select</p>
+        </div>
+        <input type="file" id="file-input" accept=".txt,.pdf,.png,.jpg,.jpeg,.gif">
+        <button id="upload-btn" class="btn">Upload File</button>
+        <div id="progress-bar"></div>
+        <p id="status"></p>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        const progressBar = document.getElementById('progress-bar');
+        const status = document.getElementById('status');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            uploadArea.classList.add('dragover');
+        }
+
+        function unhighlight() {
+            uploadArea.classList.remove('dragover');
+        }
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+        }
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadBtn.addEventListener('click', uploadFile);
+
+        function uploadFile() {
+            const file = fileInput.files[0];
+            if (!file) {
+                status.textContent = 'Please select a file';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.style.width = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    status.textContent = `File uploaded successfully: ${response.filename}`;
+                } else {
+                    status.textContent = 'Upload failed';
+                }
+            };
+
+            xhr.send(formData);
+            status.textContent = 'Uploading...';
+        }
+    </script>
+</body>
+</html>
